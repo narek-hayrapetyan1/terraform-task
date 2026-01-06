@@ -13,4 +13,5 @@ variable "db_password" {
 variable "ecs_image" {
   description = "ECR image for all ECS tasks"
   type        = string
+  default = "040067931830.dkr.ecr.us-east-2.amazonaws.com/api-service:latest"
 }

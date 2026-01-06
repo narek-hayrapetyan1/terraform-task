@@ -52,7 +52,7 @@ resource "aws_iam_policy" "secrets_access" {
   tags = merge(var.tags, { Name = "secret_access_role" })
 }
 
-resource "aws_iam_role_policy_attachment" "task_secrets_attach" {
-  role       = aws_iam_role.task.name
+resource "aws_iam_role_policy_attachment" "execution_secrets_attach" {
+  role       = aws_iam_role.ecs_task_execution.name
   policy_arn = aws_iam_policy.secrets_access.arn
 }

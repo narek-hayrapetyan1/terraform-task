@@ -2,6 +2,9 @@ resource "aws_vpc" "qa_vpc" {
   cidr_block       = "10.0.0.0/16"
   instance_tenancy = "default"
 
+  enable_dns_support   = true
+  enable_dns_hostnames = true
+
   tags       = merge(var.tags, { Name = "service-qa-vpc" })
 }
 
@@ -66,6 +69,38 @@ resource "aws_route_table_association" "qa_public_subnet_2" {
   route_table_id = aws_route_table.public.id
 }
 
+resource "aws_route_table" "private_1" {
+  vpc_id = aws_vpc.qa_vpc.id
+
+  route {
+    cidr_block     = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.nat_1.id
+  }
+
+  tags = merge(var.tags, { Name = "private-route-table-1" })
+}
+
+resource "aws_route_table" "private_2" {
+  vpc_id = aws_vpc.qa_vpc.id
+
+  route {
+    cidr_block     = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.nat_2.id
+  }
+
+  tags = merge(var.tags, { Name = "private-route-table-2" })
+}
+
+resource "aws_route_table_association" "qa_private_subnet_1" {
+  subnet_id      = aws_subnet.qa_private_subnet_1.id
+  route_table_id = aws_route_table.private_1.id
+}
+
+resource "aws_route_table_association" "qa_private_subnet_2" {
+  subnet_id      = aws_subnet.qa_private_subnet_2.id
+  route_table_id = aws_route_table.private_2.id
+}
+
 resource "aws_eip" "eip_nat_1" {
   domain = "vpc"
   tags = merge(var.tags, { Name = "service-nat-1" })
@@ -91,3 +126,15 @@ resource "aws_nat_gateway" "nat_2" {
   tags = merge(var.tags, { Name = "service-eip-nat-2" })
 }
 
+resource "aws_vpc_endpoint" "secretsmanager" {
+  vpc_id            = aws_vpc.qa_vpc.id
+  service_name      = "com.amazonaws.${var.region}.secretsmanager"
+  vpc_endpoint_type = "Interface"
+  subnet_ids        = [aws_subnet.qa_private_subnet_1.id, aws_subnet.qa_private_subnet_2.id]
+  security_group_ids = [var.vpc_endpoint_sg_id]
+  private_dns_enabled = true
+
+  tags = merge(var.tags, {
+    Name = "secretsmanager-endpoint"
+  })
+}

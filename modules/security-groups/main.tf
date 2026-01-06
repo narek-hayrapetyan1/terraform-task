@@ -52,3 +52,22 @@ resource "aws_security_group_rule" "ecs_allow_from_alb" {
 
   description = "Allow ALB to ECS on port 8080"
 }
+
+resource "aws_security_group" "secretsmanager_endpoint" {
+  name        = "secretsmanager-endpoint-sg"
+  description = "Allow ECS tasks to reach Secrets Manager"
+  vpc_id      = var.qa_vpc_id
+
+  tags = merge(var.tags, { Name = "secretsmanager-endpoint-sg" })
+}
+resource "aws_security_group_rule" "secretsmanager_ingress_from_ecs" {
+  type                     = "ingress"
+  security_group_id        = aws_security_group.secretsmanager_endpoint.id
+  source_security_group_id = aws_security_group.ecs_allow_alb.id
+
+  from_port = 443
+  to_port   = 443
+  protocol  = "tcp"
+
+  description = "Allow ECS tasks to access Secrets Manager via VPC endpoint"
+}

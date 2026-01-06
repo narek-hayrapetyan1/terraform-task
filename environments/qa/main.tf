@@ -16,6 +16,8 @@ provider "aws" {
 module "vpc" {
   source = "../../modules/vpc"
   tags   = local.common_tags
+  vpc_endpoint_sg_id = module.security_groups.secretsmanager_endpoint_sg_id
+  region = var.region
 }
 
 module "security_groups" {
@@ -35,6 +37,7 @@ module "log_groups" {
   source = "../../modules/cloudwatch/log-groups"
 
   log_groups = {
+    "/ecs/api-service"            = 7
     "/ecs/transaction-queue-task" = 7
     "/ecs/file-monitor-task"      = 7
     "/ecs/agency-task"            = 7
@@ -299,7 +302,7 @@ module "ecs_service" {
   cluster_id           = module.ecs_cluster.cluster_id
   task_definition_arn  = module.api_service_task.task_definition_arn
   subnet_ids           = module.vpc.private_subnet_ids
-  security_group_id    = module.security_groups.ecs_sg_id
+  security_group_id    = [module.security_groups.ecs_sg_id, module.security_groups.secretsmanager_endpoint_sg_id]
 
   target_group_arn     = module.alb.target_group_arn
   listener_arn         = module.alb.listener_arn
